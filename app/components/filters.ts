@@ -11,14 +11,29 @@ export const RANGES = [
 /** Filter state as it lives in the URL (so links can be shared and Back works). */
 export interface Filters {
   type: string;
+  /** Discord ID */
   player: string;
+  /** Rockstar license */
+  license: string;
   resource: string;
   range: string;
   from: string;
   to: string;
 }
 
-export const EMPTY_FILTERS: Filters = { type: "", player: "", resource: "", range: "", from: "", to: "" };
+export const EMPTY_FILTERS: Filters = { type: "", player: "", license: "", resource: "", range: "", from: "", to: "" };
+
+/** "license:<40 hex>" or just the 40 hex chars */
+export function isLicense(value: string): boolean {
+  return /^(license:)?[0-9a-f]{40}$/i.test(value.trim());
+}
+
+/** Text typed into the Player box → which filter it sets */
+export function parsePlayerSearch(value: string): Pick<Filters, "player" | "license"> {
+  const text = value.trim();
+  if (!text) return { player: "", license: "" };
+  return isLicense(text) ? { player: "", license: text.toLowerCase() } : { player: text, license: "" };
+}
 
 const KEYS = Object.keys(EMPTY_FILTERS) as (keyof Filters)[];
 
@@ -41,7 +56,7 @@ export function toSearch(filters: Filters): string {
 }
 
 export function hasFilters(filters: Filters): boolean {
-  return Boolean(filters.type || filters.player || filters.resource || filters.range);
+  return Boolean(filters.type || filters.player || filters.license || filters.resource || filters.range);
 }
 
 /** Convert to API query. `now` is passed in so relative ranges are fixed for the whole page set (load more stays consistent). */
@@ -51,6 +66,7 @@ export function toApiFilters(filters: Filters, now: number): LogFilters {
   return {
     type: filters.type || undefined,
     identifier: filters.player.trim() || undefined,
+    license: filters.license.trim() || undefined,
     resource: filters.resource.trim() || undefined,
     from: preset ? new Date(now - preset.ms).toISOString() : filters.range === "custom" ? toIso(filters.from) : undefined,
     to: filters.range === "custom" ? toIso(filters.to) : undefined,

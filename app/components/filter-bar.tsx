@@ -2,8 +2,8 @@
 
 import { useState, type FormEvent, type ReactNode } from "react";
 import { MagnifyingGlassIcon, XIcon } from "@phosphor-icons/react";
-import { RANGES, rangeLabel, type Filters } from "./filters";
-import { shortId } from "./format";
+import { parsePlayerSearch, RANGES, rangeLabel, type Filters } from "./filters";
+import { shortId, shortLicense } from "./format";
 
 interface FilterBarProps {
   filters: Filters;
@@ -21,7 +21,7 @@ const chipOn = "bg-accent/15 text-accent ring-accent/40";
  * Time buttons apply instantly; Player applies on Enter.
  */
 export function FilterBar({ filters, onChange }: FilterBarProps) {
-  const [player, setPlayer] = useState(filters.player);
+  const [player, setPlayer] = useState(filters.license || filters.player);
   const [showCustom, setShowCustom] = useState(filters.range === "custom");
   const [from, setFrom] = useState(filters.from);
   const [to, setTo] = useState(filters.to);
@@ -30,7 +30,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
 
   function submitText(e: FormEvent) {
     e.preventDefault();
-    set({ player: player.trim() });
+    set(parsePlayerSearch(player));
   }
 
   function submitCustom(e: FormEvent) {
@@ -94,10 +94,10 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
       <form onSubmit={submitText} className="max-w-xl">
         <SearchInput
           label="Player"
-          placeholder="Discord ID, e.g. 123456789012345678"
+          placeholder="Discord ID or Rockstar license"
           value={player}
           onChange={setPlayer}
-          onClear={() => set({ player: "" })}
+          onClear={() => set({ player: "", license: "" })}
         />
         <button type="submit" className="sr-only">
           Apply filters
@@ -169,10 +169,12 @@ function SearchInput(props: {
 
 /** Applied filters as removable chips + Clear all */
 function ActiveFilters({ filters, onChange }: { filters: Filters; onChange: (next: Filters) => void }) {
-  if (!filters.player && !filters.range) return null;
+  if (!filters.player && !filters.license && !filters.range) return null;
 
   const chips: { key: string; label: string; value: string; clear: Partial<Filters> }[] = [];
-  if (filters.player) chips.push({ key: "player", label: "Player", value: shortId(filters.player), clear: { player: "" } });
+  if (filters.player) chips.push({ key: "player", label: "Discord", value: shortId(filters.player), clear: { player: "" } });
+  if (filters.license)
+    chips.push({ key: "license", label: "License", value: shortLicense(filters.license), clear: { license: "" } });
   const time = rangeLabel(filters);
   if (time) chips.push({ key: "time", label: "Time", value: time, clear: { range: "", from: "", to: "" } });
 
@@ -198,7 +200,7 @@ function ActiveFilters({ filters, onChange }: { filters: Filters; onChange: (nex
       ))}
       <button
         type="button"
-        onClick={() => onChange({ ...filters, player: "", range: "", from: "", to: "" })}
+        onClick={() => onChange({ ...filters, player: "", license: "", range: "", from: "", to: "" })}
         className="h-8 rounded-full px-3 text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
       >
         Clear all

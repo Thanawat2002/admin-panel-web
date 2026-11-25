@@ -204,7 +204,8 @@ export function LogsView() {
                 items={items}
                 now={now}
                 onFilterType={(resource, type) => applyFilters({ ...filters, resource, type })}
-                onFilterPlayer={(player) => applyFilters({ ...filters, player })}
+                onFilterPlayer={(player) => applyFilters({ ...filters, player, license: "" })}
+                onFilterLicense={(license) => applyFilters({ ...filters, license, player: "" })}
               />
               <div className="flex flex-col items-center gap-3 py-2 sm:flex-row sm:justify-between">
                 <p className="text-sm text-muted-foreground" aria-live="polite">

@@ -37,6 +37,12 @@ export function shortId(identifier: string): string {
   return identifier.replace(/^discord:/, "");
 }
 
+/** "license:0123456789abcdef…" → "0123456789…cdef" */
+export function shortLicense(license: string): string {
+  const hex = license.replace(/^license:/, "");
+  return hex.length > 16 ? `${hex.slice(0, 10)}…${hex.slice(-4)}` : hex;
+}
+
 // Each type always gets the same tone. Text is always shown too, so color isn't the only signal.
 const TONES = [
   "bg-sky-400/10 text-sky-300 ring-sky-400/25",

@@ -4,9 +4,21 @@ export interface LogItem {
   type: string;
   resource: string;
   identifier: string | null;
+  /** Rockstar license ("license:…"), missing on older logs */
+  license: string | null;
+  /** In-game character name (or FiveM name for scripts that don't send one) */
   playerName: string | null;
+  /** Discord profile, null when unknown or the API has no DISCORD_BOT_TOKEN */
+  discord: DiscordProfile | null;
   data: Record<string, unknown>;
   createdAt: string;
+}
+
+export interface DiscordProfile {
+  id: string;
+  username: string;
+  globalName: string | null;
+  avatarUrl: string;
 }
 
 export interface LogPage {
@@ -30,6 +42,7 @@ export interface SessionUser {
 export interface LogFilters {
   type?: string;
   identifier?: string;
+  license?: string;
   resource?: string;
   /** ISO date-time */
   from?: string;

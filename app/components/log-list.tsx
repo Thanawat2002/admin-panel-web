@@ -2,9 +2,9 @@
 
 import { useState, type MouseEvent } from "react";
 import { CaretDownIcon } from "@phosphor-icons/react";
-import type { LogItem } from "@/lib/api";
+import type { DiscordProfile, LogItem } from "@/lib/api";
 import { CopyButton } from "./copy-button";
-import { dateTimeFormat, formatValue, relativeTime, shortId, summarize, typeTone } from "./format";
+import { dateTimeFormat, formatValue, relativeTime, shortId, shortLicense, summarize, typeTone } from "./format";
 
 // One grid template for header + rows when the list is ≥48rem wide (container query, so the sidebar is
 // taken into account). Narrower lists show each row as a stacked card.
@@ -15,9 +15,10 @@ interface LogListProps {
   now: number;
   onFilterType: (resource: string, type: string) => void;
   onFilterPlayer: (identifier: string) => void;
+  onFilterLicense: (license: string) => void;
 }
 
-export function LogList({ items, now, onFilterType, onFilterPlayer }: LogListProps) {
+export function LogList({ items, now, onFilterType, onFilterPlayer, onFilterLicense }: LogListProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   function toggle(id: string) {
@@ -52,6 +53,7 @@ export function LogList({ items, now, onFilterType, onFilterPlayer }: LogListPro
             onToggle={() => toggle(log.id)}
             onFilterType={onFilterType}
             onFilterPlayer={onFilterPlayer}
+            onFilterLicense={onFilterLicense}
           />
         ))}
       </ul>
@@ -66,9 +68,10 @@ interface LogRowProps {
   onToggle: () => void;
   onFilterType: (resource: string, type: string) => void;
   onFilterPlayer: (identifier: string) => void;
+  onFilterLicense: (license: string) => void;
 }
 
-function LogRow({ log, now, open, onToggle, onFilterType, onFilterPlayer }: LogRowProps) {
+function LogRow({ log, now, open, onToggle, onFilterType, onFilterPlayer, onFilterLicense }: LogRowProps) {
   const detailsId = `log-${log.id}`;
   const summary = summarize(log.data);
 
@@ -108,6 +111,7 @@ function LogRow({ log, now, open, onToggle, onFilterType, onFilterPlayer }: LogR
         <div className="min-w-0">
           {log.identifier ? (
             <div className="flex min-w-0 items-center gap-2">
+              <Avatar log={log} />
               <button
                 type="button"
                 onClick={() => onFilterPlayer(log.identifier!)}
@@ -115,12 +119,26 @@ function LogRow({ log, now, open, onToggle, onFilterType, onFilterPlayer }: LogR
                 className="min-w-0 text-left hover:text-accent"
               >
                 <span className="block truncate text-sm">{log.playerName ?? "Unknown"}</span>
-                <span className="block truncate font-mono text-xs text-muted-foreground">
-                  {shortId(log.identifier)}
+                <span className="block truncate text-xs text-muted-foreground">
+                  {log.discord ? (
+                    discordName(log.discord)
+                  ) : (
+                    <span className="font-mono">{shortId(log.identifier)}</span>
+                  )}
                 </span>
               </button>
               <CopyButton value={shortId(log.identifier)} label="Copy Discord ID" className="h-6 w-6 justify-center" />
             </div>
+          ) : log.license ? (
+            <button
+              type="button"
+              onClick={() => onFilterLicense(log.license!)}
+              title="Show logs for this license"
+              className="min-w-0 text-left hover:text-accent"
+            >
+              <span className="block truncate text-sm">{log.playerName ?? "Unknown"}</span>
+              <span className="block truncate font-mono text-xs text-muted-foreground">{shortLicense(log.license)}</span>
+            </button>
           ) : (
             <span className="text-sm text-muted-foreground">{log.playerName ?? "—"}</span>
           )}
@@ -148,12 +166,52 @@ function LogRow({ log, now, open, onToggle, onFilterType, onFilterPlayer }: LogR
         </button>
       </div>
 
-      {open && <LogDetails id={detailsId} log={log} />}
+      {open && <LogDetails id={detailsId} log={log} onFilterLicense={onFilterLicense} />}
     </li>
   );
 }
 
-function LogDetails({ id, log }: { id: string; log: LogItem }) {
+/** "Display Name (@username)" or "@username" */
+function discordName(profile: DiscordProfile): string {
+  return profile.globalName && profile.globalName !== profile.username
+    ? `${profile.globalName} (@${profile.username})`
+    : `@${profile.username}`;
+}
+
+function Avatar({ log }: { log: LogItem }) {
+  const letter = (log.playerName ?? log.discord?.username ?? "?").slice(0, 1).toUpperCase();
+  if (log.discord) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={log.discord.avatarUrl}
+        alt=""
+        width={28}
+        height={28}
+        loading="lazy"
+        className="h-7 w-7 shrink-0 rounded-full bg-muted"
+      />
+    );
+  }
+  return (
+    <span
+      aria-hidden
+      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground"
+    >
+      {letter}
+    </span>
+  );
+}
+
+function LogDetails({
+  id,
+  log,
+  onFilterLicense,
+}: {
+  id: string;
+  log: LogItem;
+  onFilterLicense: (license: string) => void;
+}) {
   const entries = Object.entries(log.data);
   return (
     <div id={id} className="border-t border-border bg-background/60 px-4 py-4">
@@ -195,8 +253,30 @@ function LogDetails({ id, log }: { id: string; log: LogItem }) {
             <dd className="tabular-nums">{dateTimeFormat.format(new Date(log.createdAt))}</dd>
             <dt className="text-muted-foreground">Resource</dt>
             <dd className="font-mono">{log.resource}</dd>
+            <dt className="text-muted-foreground">Character</dt>
+            <dd className="[overflow-wrap:anywhere]">{log.playerName ?? "—"}</dd>
+            <dt className="text-muted-foreground">Discord</dt>
+            <dd className="[overflow-wrap:anywhere]">{log.discord ? discordName(log.discord) : "—"}</dd>
             <dt className="text-muted-foreground">Discord ID</dt>
             <dd className="font-mono [overflow-wrap:anywhere]">{log.identifier ? shortId(log.identifier) : "—"}</dd>
+            <dt className="text-muted-foreground">License</dt>
+            <dd className="min-w-0">
+              {log.license ? (
+                <span className="flex min-w-0 items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => onFilterLicense(log.license!)}
+                    title="Show logs for this license"
+                    className="min-w-0 text-left font-mono text-xs [overflow-wrap:anywhere] hover:text-accent"
+                  >
+                    {log.license}
+                  </button>
+                  <CopyButton value={log.license} label="Copy license" className="h-6 w-6 shrink-0 justify-center" />
+                </span>
+              ) : (
+                "—"
+              )}
+            </dd>
             <dt className="text-muted-foreground">Log ID</dt>
             <dd className="font-mono text-xs [overflow-wrap:anywhere] text-muted-foreground">{log.id}</dd>
           </dl>
