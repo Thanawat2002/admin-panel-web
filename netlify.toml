@@ -1,4 +1,5 @@
-# Netlify ตรวจเจอ Next.js และใช้ Next.js runtime ให้อัตโนมัติ (รองรับ rewrites ไปยัง API ภายนอก)
+# Netlify detects Next.js and uses its Next.js runtime automatically
+# (including rewrites to the external API).
 [build]
   command = "npm run build"
   publish = ".next"

@@ -1,82 +1,84 @@
 # Admin Panel
 
-หน้าเว็บสำหรับ admin ของเซิร์ฟเวอร์ FiveM ใช้ดู log ที่ script ต่างๆ ในเกมบันทึกไว้ เช่น การเงิน, item, การตาย, รถ และคำสั่ง admin
-เข้าสู่ระบบด้วย Discord และเปิดให้เฉพาะ Discord ID ที่กำหนดไว้
+A web dashboard for FiveM server admins to browse the logs that in-game scripts record — money, items, deaths, vehicles, admin commands and more.
+Sign-in is with Discord and limited to an allowlist of Discord IDs.
 
-![stack](https://img.shields.io/badge/Next.js-16-black) ![stack](https://img.shields.io/badge/React-19-61dafb) ![stack](https://img.shields.io/badge/Tailwind-4-38bdf8)
+![Next.js](https://img.shields.io/badge/Next.js-16-black) ![React](https://img.shields.io/badge/React-19-61dafb) ![Tailwind](https://img.shields.io/badge/Tailwind-4-38bdf8)
 
-## ความสามารถ
-- **เมนู Script → Type** (sidebar) แสดงจำนวน log ใน 24 ชั่วโมงล่าสุด และมีช่องค้นหา รองรับ script หลักร้อยตัว
-- **Filter** ตามช่วงเวลา (`1h` `24h` `7d` `30d` หรือกำหนดเอง) และตามผู้เล่น (Discord ID)
-- **ดูรายละเอียด log** แบบ key/value พร้อมปุ่ม Copy JSON และ copy Discord ID
-- **Filter เก็บอยู่ใน URL** แชร์ลิงก์ให้ admin คนอื่นได้ และกดปุ่ม Back ย้อนได้
-- **รองรับมือถือ** เมนูเปลี่ยนเป็น drawer และรายการ log เปลี่ยนเป็น card
-- **ธีม dark** และใส่ใจ accessibility (keyboard focus, aria label, reduced motion)
+## Features
+- **Script → Type sidebar** with log counts for the last 24 hours and search — scales to hundreds of scripts
+- **Filters** by time range (`1h` `24h` `7d` `30d` or a custom range) and by player (Discord ID)
+- **Log details** as key/value pairs, with Copy JSON and copy Discord ID
+- **Filters live in the URL** — share links with other admins, and the Back button works
+- **Mobile friendly** — the sidebar becomes a drawer and logs become cards
+- **Dark theme** with accessibility in mind (keyboard focus, aria labels, reduced motion)
 
-## ภาพรวมระบบ
+## How it fits together
 ```
 FiveM server ── exports.mongodb:log() ──▶ MongoDB (fivem_logs) ◀── Elysia API (VPS) ◀── /api/* ── Admin Panel (Netlify)
 ```
-- **repo นี้มีแค่หน้าเว็บ** ข้อมูลทั้งหมดดึงผ่าน **Admin Panel API** (Elysia + Bun) ที่รันอยู่บน VPS เครื่องเดียวกับ MongoDB
-- Next.js ส่ง `/api/*` ต่อไปที่ API ผ่าน `rewrites` ใน [`next.config.ts`](next.config.ts) ทำให้เว็บกับ API อยู่ origin เดียวกัน
-  cookie login จึงใช้ร่วมกันได้และไม่ต้องตั้ง CORS
-- หน้าเว็บไม่ได้ต่อ MongoDB โดยตรง และไม่มี secret ใดๆ อยู่ฝั่งเว็บ
+- **This repo is only the website.** All data comes from the **Admin Panel API** (Elysia + Bun), which runs on the VPS next to MongoDB.
+- Next.js proxies `/api/*` to the API through `rewrites` in [`next.config.ts`](next.config.ts), so the site and the API share one origin:
+  the login cookie just works and no CORS setup is needed.
+- The website never talks to MongoDB directly and holds no secrets.
 
-## เริ่มพัฒนาบนเครื่อง
-ต้องรัน API ไว้ก่อน (ค่า default คือ `http://localhost:8080`)
+## Local development
+Start the API first (default: `http://localhost:8080`).
 ```bash
 bun install
-cp .env.example .env.local   # แก้ API_URL ถ้า API ไม่ได้อยู่ที่ localhost:8080
+cp .env.example .env.local   # change API_URL if the API isn't on localhost:8080
 bun run dev                  # http://localhost:3000
 ```
 
-| คำสั่ง | หน้าที่ |
+| Command | What it does |
 |---|---|
-| `bun run dev` | dev server |
-| `bun run build` | build สำหรับ production |
-| `bun run lint` | ESLint |
+| `bun run dev` | Start the dev server |
+| `bun run build` | Production build |
+| `bun run lint` | Run ESLint |
 
-## Deploy บน Netlify
-1. **Add new site → Import from GitHub** แล้วเลือก repo นี้ (Netlify จะอ่านค่า build จาก [`netlify.toml`](netlify.toml) เอง)
-2. **Site configuration → Environment variables** เพิ่ม
-   | ชื่อ | ตัวอย่าง | หมายเหตุ |
+## Deploying to Netlify
+1. **Add new site → Import from GitHub** and pick this repo. Build settings are read from [`netlify.toml`](netlify.toml).
+2. Under **Site configuration → Environment variables**, add:
+   | Name | Example | Notes |
    |---|---|---|
-   | `API_URL` | `https://api.your-domain.com` | URL สาธารณะของ API ควรเป็น HTTPS **ใช้ตอน build** ถ้าเปลี่ยนต้อง deploy ใหม่ |
-3. Deploy
+   | `API_URL` | `https://api.your-domain.com` | Public URL of the API, preferably HTTPS. **Read at build time** — redeploy after changing it. |
+3. Deploy.
 
-### ตั้งค่าฝั่ง API ให้ตรงกับ Netlify
-ใน `.env` ของ API บน VPS:
+### Matching API settings
+In the API's `.env` on the VPS:
 ```env
-NODE_ENV=production                                   # cookie เป็น Secure (ต้องใช้ HTTPS)
-WEB_URL=https://<your-site>.netlify.app               # หน้าที่ redirect กลับไปหลัง login
+NODE_ENV=production                                   # Secure cookies (requires HTTPS)
+WEB_URL=https://<your-site>.netlify.app               # Where users land after signing in
 DISCORD_REDIRECT_URI=https://<your-site>.netlify.app/api/auth/callback
 ```
-และเพิ่ม Redirect URI เดียวกันนี้ใน [Discord Developer Portal](https://discord.com/developers/applications) → OAuth2 → Redirects
+Add the same redirect URI in the [Discord Developer Portal](https://discord.com/developers/applications) → OAuth2 → Redirects.
 
-ถ้าใช้ custom domain ให้เปลี่ยน `<your-site>.netlify.app` เป็น domain นั้นทั้ง 3 จุด
+Using a custom domain? Replace `<your-site>.netlify.app` with it in all three places.
 
-## โครงสร้างโปรเจกต์
+> Only expose the API to the internet (behind a reverse proxy with HTTPS). Never expose MongoDB's port.
+
+## Project structure
 ```
 app/
-├── layout.tsx            font, theme
-├── page.tsx              หน้าหลัก (ห่อ LogsView ด้วย Suspense)
-├── logs-view.tsx         state หลัก: โหลด log, เมนู, filter ↔ URL
-├── login/                หน้า login + ข้อความ error จาก OAuth
+├── layout.tsx            Fonts and theme
+├── page.tsx              Home page (wraps LogsView in Suspense)
+├── logs-view.tsx         Main state: loading logs, menu, filters ↔ URL
+├── login/                Login page and OAuth error messages
 └── components/
-    ├── sidebar.tsx       เมนู Script → Type + ค้นหา
-    ├── filter-bar.tsx    Time / Player + ชิป filter ที่ใช้อยู่
-    ├── log-list.tsx      รายการ log, รายละเอียด, skeleton
-    ├── top-bar.tsx       แถบบน + ปุ่มเปิดเมนูบนมือถือ + ออกจากระบบ
-    ├── filters.ts        แปลง filter ↔ URL ↔ query ของ API
-    └── format.ts         format เวลา, ตัวเลข, สีของ type
-lib/api.ts                API client และ type ของ response
+    ├── sidebar.tsx       Script → Type menu with search
+    ├── filter-bar.tsx    Time / Player filters and active filter chips
+    ├── log-list.tsx      Log rows, details panel, loading skeleton
+    ├── top-bar.tsx       Header, mobile menu button, sign out
+    ├── filters.ts        Filters ↔ URL ↔ API query
+    └── format.ts         Time, number and type-color formatting
+lib/api.ts                API client and response types
 ```
 
-## API ที่หน้าเว็บเรียกใช้
-| Method | Path | หน้าที่ |
+## API endpoints used
+| Method | Path | Purpose |
 |---|---|---|
-| GET | `/api/auth/login` | redirect ไป Discord |
-| GET | `/api/auth/me` | ข้อมูล admin ที่ login อยู่ (401 = ยังไม่ login) |
-| POST | `/api/auth/logout` | ออกจากระบบ |
-| GET | `/api/logs` | รายการ log (`resource`, `type`, `identifier`, `from`, `to`, `limit`, `cursor`) |
-| GET | `/api/logs/menu` | เมนู script → type พร้อมจำนวน 24 ชม. |
+| GET | `/api/auth/login` | Redirect to Discord |
+| GET | `/api/auth/me` | Current admin (401 = not signed in) |
+| POST | `/api/auth/logout` | Sign out |
+| GET | `/api/logs` | Logs (`resource`, `type`, `identifier`, `from`, `to`, `limit`, `cursor`) |
+| GET | `/api/logs/menu` | Script → type menu with 24-hour counts |

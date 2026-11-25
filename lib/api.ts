@@ -1,4 +1,4 @@
-/** type ให้ตรงกับ response ของ admin-panel/api (src/routes/logs.ts, src/auth.ts) */
+/** Types matching the admin-panel/api responses (src/routes/logs.ts, src/auth.ts) */
 export interface LogItem {
   id: string;
   type: string;
@@ -36,7 +36,7 @@ export interface LogFilters {
   to?: string;
 }
 
-/** API ตอบ 401 = ยังไม่ login หรือไม่ใช่ admin */
+/** The API returned 401: not signed in, or not an admin */
 export class UnauthorizedError extends Error {}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {

@@ -14,8 +14,9 @@ const nextConfig: NextConfig = {
       },
     },
   },
-  // ส่ง /api/* ต่อไปที่ Elysia ให้หน้าเว็บกับ API อยู่ domain เดียวกัน (cookie session ใช้ร่วมกันได้, ไม่ต้องตั้ง CORS)
-  // ถ้า production ใช้ nginx/Caddy แยก /api ให้แล้ว rewrite นี้จะไม่ถูกเรียก
+  // Proxy /api/* to the Elysia API so the site and API share one origin
+  // (the session cookie just works and no CORS setup is needed).
+  // If a reverse proxy (nginx/Caddy) already routes /api, this rewrite is never hit.
   rewrites() {
     return [{ source: "/api/:path*", destination: `${API_URL}/api/:path*` }];
   },
