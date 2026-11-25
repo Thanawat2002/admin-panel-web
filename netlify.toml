@@ -1,0 +1,7 @@
+# Netlify ตรวจเจอ Next.js และใช้ Next.js runtime ให้อัตโนมัติ (รองรับ rewrites ไปยัง API ภายนอก)
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
