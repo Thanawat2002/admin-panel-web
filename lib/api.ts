@@ -24,6 +24,10 @@ export interface DiscordProfile {
 export interface LogPage {
   items: LogItem[];
   nextCursor: string | null;
+  /** Position of the newest log returned; pass it as `after` to poll for newer logs */
+  newestCursor: string | null;
+  /** Only for `after` requests: more new logs are waiting, ask again right away */
+  hasNewer: boolean;
 }
 
 /** GET /api/logs/menu */
@@ -71,6 +75,12 @@ export const api = {
     const params = new URLSearchParams({ limit: String(limit) });
     for (const [key, value] of Object.entries(filters)) if (value) params.set(key, value);
     if (cursor) params.set("cursor", cursor);
+    return request<LogPage>(`/logs?${params}`);
+  },
+  /** Logs newer than `after` (a newestCursor), oldest-first chunks of up to `limit`, returned newest first */
+  newer: (filters: LogFilters, after: string, limit = 100) => {
+    const params = new URLSearchParams({ limit: String(limit), after });
+    for (const [key, value] of Object.entries(filters)) if (value) params.set(key, value);
     return request<LogPage>(`/logs?${params}`);
   },
 };

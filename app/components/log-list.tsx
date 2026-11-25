@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type MouseEvent } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import { CaretDownIcon } from "@phosphor-icons/react";
 import type { DiscordProfile, LogItem } from "@/lib/api";
 import { CopyButton } from "./copy-button";
@@ -16,10 +16,26 @@ interface LogListProps {
   onFilterType: (resource: string, type: string) => void;
   onFilterPlayer: (identifier: string) => void;
   onFilterLicense: (license: string) => void;
+  /** Ids of rows that just arrived via Live (briefly highlighted) */
+  fresh?: Set<string>;
+  /** Called with the number of open rows (Live holds new logs while one is open) */
+  onExpandedChange?: (count: number) => void;
 }
 
-export function LogList({ items, now, onFilterType, onFilterPlayer, onFilterLicense }: LogListProps) {
+export function LogList({
+  items,
+  now,
+  onFilterType,
+  onFilterPlayer,
+  onFilterLicense,
+  fresh,
+  onExpandedChange,
+}: LogListProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    onExpandedChange?.(expanded.size);
+  }, [expanded, onExpandedChange]);
 
   function toggle(id: string) {
     setExpanded((prev) => {
@@ -54,6 +70,7 @@ export function LogList({ items, now, onFilterType, onFilterPlayer, onFilterLice
             onFilterType={onFilterType}
             onFilterPlayer={onFilterPlayer}
             onFilterLicense={onFilterLicense}
+            fresh={fresh?.has(log.id) ?? false}
           />
         ))}
       </ul>
@@ -69,9 +86,10 @@ interface LogRowProps {
   onFilterType: (resource: string, type: string) => void;
   onFilterPlayer: (identifier: string) => void;
   onFilterLicense: (license: string) => void;
+  fresh: boolean;
 }
 
-function LogRow({ log, now, open, onToggle, onFilterType, onFilterPlayer, onFilterLicense }: LogRowProps) {
+function LogRow({ log, now, open, onToggle, onFilterType, onFilterPlayer, onFilterLicense, fresh }: LogRowProps) {
   const detailsId = `log-${log.id}`;
   const summary = summarize(log.data);
 
@@ -82,7 +100,7 @@ function LogRow({ log, now, open, onToggle, onFilterType, onFilterPlayer, onFilt
   }
 
   return (
-    <li className="border-b border-border last:border-0">
+    <li className={`border-b border-border last:border-0 ${fresh ? "log-fresh" : ""}`}>
       <div
         onClick={onRowClick}
         className={`flex cursor-pointer flex-col gap-2 px-4 py-3 transition-colors duration-150 hover:bg-muted/50 ${open ? "bg-muted/40" : ""} ${GRID}`}
