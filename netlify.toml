@@ -6,8 +6,9 @@
 
 [build.environment]
   NODE_VERSION = "22"
+
 [[redirects]]
   from = "/api/*"
-  to = "https://185.84.160.183/api/:splat"
+  to = "http://185.84.160.183:8080/api/:splat"
   status = 200
   force = true
