@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState, type MouseEvent } from "react";
-import { CaretDownIcon } from "@phosphor-icons/react";
+import { CaretDownIcon, DotOutlineIcon, MinusIcon, PlusIcon } from "@phosphor-icons/react";
 import type { DiscordProfile, LogItem } from "@/lib/api";
 import { CopyButton } from "./copy-button";
-import { dateTimeFormat, formatValue, relativeTime, shortId, shortLicense, summarize, typeTone } from "./format";
+import { actionKind, dateTimeFormat, formatValue, relativeTime, shortId, shortLicense, summarize, typeTone } from "./format";
 
 // One grid template for header + rows when the list is ≥48rem wide (container query, so the sidebar is
 // taken into account). Narrower lists show each row as a stacked card.
@@ -126,11 +126,7 @@ function LogRow({ log, now, open, onToggle, onFilterType, onFilterPlayer, onFilt
             >
               <span className="truncate">{log.type}</span>
             </button>
-            {actionText && (
-              <span className="truncate font-mono text-xs text-muted-foreground" title={`action: ${actionText}`}>
-                {actionText}
-              </span>
-            )}
+            {actionText && <ActionChip action={actionText} />}
           </div>
         </div>
 
@@ -194,6 +190,26 @@ function LogRow({ log, now, open, onToggle, onFilterType, onFilterPlayer, onFilt
 
       {open && <LogDetails id={detailsId} log={log} onFilterLicense={onFilterLicense} />}
     </li>
+  );
+}
+
+const ACTION_ICON = {
+  positive: { Icon: PlusIcon, className: "text-emerald-400" },
+  negative: { Icon: MinusIcon, className: "text-rose-400" },
+  neutral: { Icon: DotOutlineIcon, className: "text-muted-foreground" },
+} as const;
+
+/** Round, untinted chip so it reads as a sub-label of the square type badge */
+function ActionChip({ action }: { action: string }) {
+  const { Icon, className } = ACTION_ICON[actionKind(action)];
+  return (
+    <span
+      title={`action: ${action}`}
+      className="inline-flex h-6 min-w-0 items-center gap-1 rounded-full bg-muted pr-2.5 pl-1.5 text-xs font-medium text-foreground/85 ring-1 ring-border ring-inset"
+    >
+      <Icon size={12} weight="bold" aria-hidden className={`shrink-0 ${className}`} />
+      <span className="truncate">{action}</span>
+    </span>
   );
 }
 

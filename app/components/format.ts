@@ -59,3 +59,15 @@ export function typeTone(type: string): string {
   for (const ch of type) hash = (hash * 31 + ch.charCodeAt(0)) | 0;
   return TONES[Math.abs(hash) % TONES.length]!;
 }
+
+// Action verbs grouped by effect, so "add" and "remove" read differently at a glance
+const POSITIVE_ACTIONS = /^(add|give|deposit|buy|receive|create|spawn|join|grant|heal|revive)/i;
+const NEGATIVE_ACTIONS = /^(remove|take|withdraw|sell|delete|drop|leave|kick|ban|revoke|kill)/i;
+
+export type ActionKind = "positive" | "negative" | "neutral";
+
+export function actionKind(action: string): ActionKind {
+  if (POSITIVE_ACTIONS.test(action)) return "positive";
+  if (NEGATIVE_ACTIONS.test(action)) return "negative";
+  return "neutral";
+}
