@@ -8,7 +8,7 @@ import { dateTimeFormat, formatValue, relativeTime, shortId, shortLicense, summa
 
 // One grid template for header + rows when the list is ≥48rem wide (container query, so the sidebar is
 // taken into account). Narrower lists show each row as a stacked card.
-const GRID = "@3xl:grid @3xl:grid-cols-[7.5rem_8rem_minmax(0,1fr)_9rem_minmax(0,1.6fr)_2.5rem] @3xl:items-center @3xl:gap-4";
+const GRID = "@3xl:grid @3xl:grid-cols-[7.5rem_11rem_minmax(0,1fr)_9rem_minmax(0,1.6fr)_2.5rem] @3xl:items-center @3xl:gap-4";
 
 interface LogListProps {
   items: LogItem[];
@@ -53,7 +53,7 @@ export function LogList({
         className={`hidden border-b border-border px-4 py-2.5 text-xs font-medium tracking-wide text-muted-foreground uppercase ${GRID}`}
       >
         <span>Time</span>
-        <span>Type</span>
+        <span>Type / Action</span>
         <span>Player</span>
         <span>Resource</span>
         <span>Details</span>
@@ -91,7 +91,10 @@ interface LogRowProps {
 
 function LogRow({ log, now, open, onToggle, onFilterType, onFilterPlayer, onFilterLicense, fresh }: LogRowProps) {
   const detailsId = `log-${log.id}`;
-  const summary = summarize(log.data);
+  // action is shown next to the type, so leave it out of the one-line summary
+  const { action, ...rest } = log.data;
+  const actionText = action == null || action === "" ? null : formatValue(action);
+  const summary = summarize(actionText ? rest : log.data);
 
   // Clicking anywhere on the row toggles it, except on its own buttons
   function onRowClick(e: MouseEvent) {
@@ -114,15 +117,20 @@ function LogRow({ log, now, open, onToggle, onFilterType, onFilterPlayer, onFilt
           >
             {relativeTime(log.createdAt, now)}
           </time>
-          <div className="order-1 @3xl:order-none">
+          <div className="order-1 flex min-w-0 items-center gap-1.5 @3xl:order-none">
             <button
               type="button"
               onClick={() => onFilterType(log.resource, log.type)}
               title={`Show only ${log.type}`}
-              className={`inline-flex h-6 max-w-full items-center rounded-md px-2 font-mono text-xs font-medium ring-1 ring-inset ${typeTone(log.type)}`}
+              className={`inline-flex h-6 max-w-full shrink-0 items-center rounded-md px-2 font-mono text-xs font-medium ring-1 ring-inset ${typeTone(log.type)}`}
             >
               <span className="truncate">{log.type}</span>
             </button>
+            {actionText && (
+              <span className="truncate font-mono text-xs text-muted-foreground" title={`action: ${actionText}`}>
+                {actionText}
+              </span>
+            )}
           </div>
         </div>
 
